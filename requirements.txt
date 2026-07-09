@@ -1,5 +1,5 @@
 streamlit
-geopandas>=0.14
+geopandas
 pandas
 plotly
 leafmap
