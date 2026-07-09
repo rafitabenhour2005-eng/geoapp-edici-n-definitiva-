@@ -28,7 +28,7 @@ def cargar_datos():
     )
 
     incendios = gpd.read_file(
-        "data/areas_mayor_presencia_incendios.gpkg"
+        "data/areas_con_mayor_presencia_incendios.gpkg"
     )
 
     return reserva, incendios
