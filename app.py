@@ -28,7 +28,7 @@ def cargar_datos():
     )
 
     incendios = gpd.read_file(
-        "data/areas_con_mayor_presencia_de_incendios.gpkg"
+        "data/areas_mayor_presencia_incendios.gpkg"
     )
 
     return reserva, incendios
@@ -37,20 +37,53 @@ def cargar_datos():
 reserva, incendios = cargar_datos()
 
 # =====================================================
-# Convertir a UTM para calcular áreas
+# DEPURACIÓN (Paso 1)
 # =====================================================
 
-# UTM Zona 16N (Calakmul)
+st.subheader("Información de las capas")
+
+st.write("Número de polígonos de la reserva:", len(reserva))
+st.write("Número de polígonos de incendios:", len(incendios))
+
+st.write("CRS de la reserva:", reserva.crs)
+st.write("CRS de incendios:", incendios.crs)
+
+# =====================================================
+# DEPURACIÓN (Paso 2)
+# =====================================================
+
+st.subheader("Extensión espacial")
+
+st.write("Reserva (bounds):")
+st.write(reserva.total_bounds)
+
+st.write("Incendios (bounds):")
+st.write(incendios.total_bounds)
+
+# =====================================================
+# Verificar CRS
+# =====================================================
+
+if reserva.crs is None:
+    st.error("La capa de la reserva no tiene un sistema de coordenadas.")
+    st.stop()
+
+if incendios.crs is None:
+    st.error("La capa de incendios no tiene un sistema de coordenadas.")
+    st.stop()
+
+# =====================================================
+# Calcular áreas
+# =====================================================
+
 reserva_utm = reserva.to_crs("EPSG:32616")
 incendios_utm = incendios.to_crs("EPSG:32616")
 
-# Área de la reserva
 area_reserva = reserva_utm.area.sum() / 10000
 
-# Área de incendios
-incendios_utm["Área (ha)"] = incendios_utm.area / 10000
+incendios_utm["area_ha"] = incendios_utm.area / 10000
 
-area_incendios = incendios_utm["Área (ha)"].sum()
+area_incendios = incendios_utm["area_ha"].sum()
 
 porcentaje = (area_incendios / area_reserva) * 100
 
@@ -58,16 +91,16 @@ porcentaje = (area_incendios / area_reserva) * 100
 # Barra lateral
 # =====================================================
 
-st.sidebar.title("Capas")
+st.sidebar.header("Capas")
 
 mostrar_reserva = st.sidebar.checkbox(
     "Reserva de la Biosfera",
-    True
+    value=True
 )
 
 mostrar_incendios = st.sidebar.checkbox(
     "Áreas con incendios",
-    True
+    value=True
 )
 
 # =====================================================
@@ -79,20 +112,29 @@ mapa = leafmap.Map()
 mapa.add_basemap("SATELLITE")
 
 if mostrar_reserva:
-
     mapa.add_gdf(
-        reserva,
-        layer_name="Reserva de la Biosfera"
+        reserva.to_crs(4326),
+        layer_name="Reserva",
+        style={
+            "color": "green",
+            "weight": 2,
+            "fillOpacity": 0.1
+        }
     )
 
 if mostrar_incendios:
-
     mapa.add_gdf(
-        incendios,
-        layer_name="Áreas con incendios"
+        incendios.to_crs(4326),
+        layer_name="Incendios",
+        style={
+            "color": "red",
+            "fillColor": "red",
+            "fillOpacity": 0.6,
+            "weight": 1
+        }
     )
 
-mapa.zoom_to_gdf(reserva)
+mapa.zoom_to_gdf(reserva.to_crs(4326))
 
 mapa.to_streamlit(height=700)
 
@@ -100,7 +142,7 @@ mapa.to_streamlit(height=700)
 # Indicadores
 # =====================================================
 
-st.header("Indicadores")
+st.header("📊 Indicadores")
 
 c1, c2, c3 = st.columns(3)
 
@@ -116,7 +158,7 @@ c2.metric(
 
 c3.metric(
     "% de la reserva afectada",
-    f"{porcentaje:.2f}"
+    f"{porcentaje:.2f}%"
 )
 
 # =====================================================
@@ -125,17 +167,17 @@ c3.metric(
 
 st.header("Área por polígono")
 
-incendios_utm["Polígono"] = range(
+incendios_utm["poligono"] = range(
     1,
     len(incendios_utm) + 1
 )
 
 fig = px.bar(
     incendios_utm,
-    x="Polígono",
-    y="Área (ha)",
-    color="Área (ha)",
-    title="Área de cada polígono de incendio"
+    x="poligono",
+    y="area_ha",
+    color="area_ha",
+    title="Área de cada polígono"
 )
 
 st.plotly_chart(
@@ -163,8 +205,8 @@ st.dataframe(
 csv = tabla.to_csv(index=False)
 
 st.download_button(
-    label="📥 Descargar tabla CSV",
-    data=csv,
-    file_name="areas_con_mayor_presencia_de_incendios.csv",
+    "📥 Descargar CSV",
+    csv,
+    file_name="areas_mayor_presencia_incendios.csv",
     mime="text/csv"
 )
