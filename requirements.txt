@@ -1,10 +1,7 @@
 streamlit
-geopandas
+geopandas>=0.14
+pandas
+plotly
 leafmap
 folium
-plotly
-pandas
-shapely
-pyproj
-fiona
 pyogrio
