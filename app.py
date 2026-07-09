@@ -24,11 +24,11 @@ st.markdown("### Áreas con mayor presencia de incendios forestales")
 def cargar_datos():
 
     reserva = gpd.read_file(
-        "data/área_reserva_calakmul.geojson"
+        "data/area_reserva_calakmul.gpkg"
     )
 
     incendios = gpd.read_file(
-        "data/áreas_con_mayor_presencia_de_incendios.geojson"
+        "data/areas_con_mayor_presencia_de_incendios.gpkg"
     )
 
     return reserva, incendios
